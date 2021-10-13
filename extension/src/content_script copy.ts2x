@@ -1,0 +1,31 @@
+// So I can use their autocompletes
+const html = String.raw;
+const gql = String.raw;
+const css = String.raw;
+
+const RootCSS = css`
+  .delinkedinButton {
+    cursor: pointer;
+  }
+`;
+
+const RootHTML = html`
+  <style>
+    ${RootCSS}
+  </style>
+`;
+
+const DelinkedinPopOver = html` <div class="delinkedinButton">🔥</div> `;
+
+document.body.innerHTML = RootHTML + DelinkedinPopOver;
+
+// chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+//   if (msg.color) {
+//     console.log("Receive color = " + msg.color);
+//     document.body.innerHTML = "<div>cu</div>";
+//     document.body.style.backgroundColor = msg.color;
+//     sendResponse("Change color to " + msg.color);
+//   } else {
+//     sendResponse("Color message is none.");
+//   }
+// });
