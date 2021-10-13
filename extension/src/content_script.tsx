@@ -5,8 +5,30 @@ import { css, html } from "./utils/UtilityTypeDef";
 import { MD5 } from "./utils/MD5";
 import { generateColorFromId } from "./utils/ColorGenerator";
 
+const ScrollbarCSS = css`
+  .delinkedinCommentArea::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+
+    margin-left: 12px;
+  }
+  .delinkedinCommentArea::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+
+    margin-left: 12px;
+  }
+  .delinkedinCommentArea::-webkit-scrollbar-thumb {
+    background-color: #11171a;
+    border-radius: 10px;
+
+    margin-left: 12px;
+  }
+`;
+
 const RootCSS = css`
   ${TippyCSS}
+  ${ScrollbarCSS}
 
   .delinkedin {
     box-sizing: border-box;
@@ -21,6 +43,9 @@ const RootCSS = css`
     height: 28px;
 
     padding-left: 4px;
+
+    background-color: #ffffff33;
+    color: white;
   }
 
   .delinkedinButton {
@@ -40,10 +65,10 @@ const RootCSS = css`
   .delinkedinComment {
     min-height: 20px;
     width: 100%;
-    padding: 6px;
+    padding: 12px 6px;
 
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 
     border-bottom-style: solid;
     border-bottom-width: 2px;
@@ -60,29 +85,14 @@ const RootCSS = css`
     border-radius: 50%;
   }
 
+  .delinkedinComment > span {
+    margin-top: 0.4rem; // To center one line comments
+  }
+
   .delinkedinCommentArea {
     width: 100%;
     height: 100%;
     overflow: auto;
-  }
-
-  .delinkedinCommentArea::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-
-    margin-left: 12px;
-  }
-  .delinkedinCommentArea::-webkit-scrollbar-track {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-
-    margin-left: 12px;
-  }
-  .delinkedinCommentArea::-webkit-scrollbar-thumb {
-    background-color: #11171a;
-    border-radius: 10px;
-
-    margin-left: 12px;
   }
 
   .delinkedinInputArea {
@@ -135,7 +145,10 @@ const DelinkedinModal = html`
         .fill(0)
         .map((_) =>
           DelinkedinComment({
-            text: "Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello!",
+            text:
+              Math.random() > 0.5
+                ? "Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello!"
+                : "Hello!",
             id: "Pedro",
           })
         )
