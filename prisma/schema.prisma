@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./db.sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  postId String
+  userId String
+
+  content String
+
+  upvotes Upvote[]
+}
+
+model Upvote {
+  id String @id @default(cuid())
+
+  comment   Comment @relation(fields: [commentId], references: [id])
+  commentId String
+
+  userId String
+
+  @@unique([userId, commentId])
+}
