@@ -21,6 +21,7 @@ import { createComment, doGraphQl, getAllPosts } from "./GraphQL";
 import DelinkedinPopOver, {
   DelinkedinPopOverCSS,
 } from "./components/DelinkedinPopover";
+import { nanoid } from "nanoid";
 
 const RootCSS = css`
   ${TippyCSS}
@@ -57,6 +58,8 @@ const RootHTML = html`
 
 document.head.innerHTML += RootHTML;
 
+const userId = nanoid();
+
 function injectDelinkedinPopoverOnPost(
   currentPost: HTMLDivElement,
   postId: string
@@ -78,6 +81,9 @@ function injectDelinkedinPopoverOnPost(
         `#modal-comment-list-${postId}`
       ) as HTMLDivElement;
 
+      modalInput.focus();
+
+      // Helper function to render the comment list
       function renderCommentList(comments: CommentType[]) {
         modalCommentList.innerHTML = comments
           .reverse()
@@ -90,6 +96,7 @@ function injectDelinkedinPopoverOnPost(
           .join("\n");
       }
 
+      // Get's initially the comments
       (async () => {
         let result = await doGraphQl<
           GetAllPostsQuery,
@@ -103,6 +110,7 @@ function injectDelinkedinPopoverOnPost(
         renderCommentList(result.getPostById.comments! as CommentType[]);
       })();
 
+      // After every comment submission, get it again
       modalInput.onchange = async (e) => {
         const input = e.target as HTMLInputElement;
         let comment = input.value.trim();
@@ -120,7 +128,7 @@ function injectDelinkedinPopoverOnPost(
         >(createComment, {
           content: comment,
           postId: postId,
-          userId: "pedro",
+          userId,
         });
 
         renderCommentList(
