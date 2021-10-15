@@ -147,13 +147,15 @@ function getAllPostsAndInjectHTML() {
 
   for (let i = 0; i < allPostsVisible.length; i++) {
     let currentPost = allPostsVisible[i];
-    if (currentPost.delinked) return;
+    if (currentPost.delinked) continue;
     currentPost.delinked = true;
+
+    console.log(`Delinked (${i})`, currentPost.delinked);
 
     let possiblePostId =
       currentPost.parentElement?.parentElement?.parentElement?.dataset.urn;
 
-    if (!possiblePostId) return;
+    if (!possiblePostId) continue;
 
     let postId = possiblePostId.split(":").join("-");
     injectDelinkedinPopoverOnPost(currentPost, postId);
@@ -162,6 +164,6 @@ function getAllPostsAndInjectHTML() {
 
 setInterval(() => {
   getAllPostsAndInjectHTML();
-}, 300);
+}, 500);
 
 // document.body.innerHTML = RootHTML + DelinkedinPopOver;
