@@ -1,34 +1,26 @@
-import { GetAllPostsQuery } from "./generated/graphql";
 import tippy from "tippy.js";
 import { TippyCSS } from "./TippyCSS";
 import { css, html } from "./utils/UtilityTypeDef";
-import { MD5 } from "./utils/MD5";
-import { generateColorFromId } from "./utils/ColorGenerator";
+import {
+  CommentType,
+  CreateCommentMutation,
+  GetAllPostsQuery,
+  GetAllPostsQueryVariables,
+  Mutation,
+  MutationCreateCommentArgs,
+} from "./generated/graphql";
 
-const ScrollbarCSS = css`
-  .delinkedinCommentArea::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-
-    margin-left: 12px;
-  }
-  .delinkedinCommentArea::-webkit-scrollbar-track {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-
-    margin-left: 12px;
-  }
-  .delinkedinCommentArea::-webkit-scrollbar-thumb {
-    background-color: #11171a;
-    border-radius: 10px;
-
-    margin-left: 12px;
-  }
-`;
+import DelinkedinComment, {
+  DelinkedinCommentCSS,
+} from "./components/DelinkedinComment";
+import {
+  DelinkedinModal,
+  DelinkedinModalCSS,
+} from "./components/DelinkedinModal";
+import { createComment, doGraphQl, getAllPosts } from "./GraphQL";
 
 const RootCSS = css`
   ${TippyCSS}
-  ${ScrollbarCSS}
 
   .delinkedin {
     box-sizing: border-box;
@@ -48,60 +40,12 @@ const RootCSS = css`
     color: white;
   }
 
+  /* Components */
+  ${DelinkedinCommentCSS}
+  ${DelinkedinModalCSS}
+
   .delinkedinButton {
     cursor: pointer;
-  }
-
-  .delinkedinModal {
-    width: 200px;
-    height: 300px;
-
-    display: grid;
-    grid-template-rows: 40px 1fr;
-
-    padding: 12px 0px 12px 0px;
-  }
-
-  .delinkedinComment {
-    min-height: 20px;
-    width: 100%;
-    padding: 12px 6px;
-
-    display: flex;
-    align-items: flex-start;
-
-    border-bottom-style: solid;
-    border-bottom-width: 2px;
-    border-bottom-color: #ffffff11;
-  }
-
-  .delinkedinComment > img {
-    width: 24.5px;
-    height: 24.5px;
-
-    padding: 3px;
-    margin-right: 10px;
-
-    border-radius: 50%;
-  }
-
-  .delinkedinComment > span {
-    margin-top: 0.4rem; // To center one line comments
-  }
-
-  .delinkedinCommentArea {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-  }
-
-  .delinkedinInputArea {
-    width: 100%;
-    height: 40px;
-  }
-
-  .delinkedinCommentInput {
-    border-radius: 4px;
   }
 `;
 
@@ -119,47 +63,68 @@ const DelinkedinPopOver = html`
 
 document.body.innerHTML = RootHTML + DelinkedinPopOver;
 
-function DelinkedinComment(props: { text: string; id: string }) {
-  return html`
-    <div class="delinkedin delinkedinComment">
-      <img
-        style="background-color: ${generateColorFromId(props.id)}"
-        src="http://anonymous-animals.herokuapp.com/avatar/${props.id}"
-      />
-      <span>${props.text}</span>
-    </div>
-  `;
-}
-
-const DelinkedinModal = html`
-  <div class="delinkedin delinkedinModal">
-    <div class="delinkedin delinkedinInputArea">
-      <input
-        class="delinkedin delinkedinCommentInput"
-        placeholder="Spit some truths..."
-      />
-    </div>
-
-    <div class="delinkedin delinkedinCommentArea">
-      ${new Array(20)
-        .fill(0)
-        .map((_) =>
-          DelinkedinComment({
-            text:
-              Math.random() > 0.5
-                ? "Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello! Hello!"
-                : "Hello!",
-            id: "Pedro",
-          })
-        )
-        .join("\n")}
-    </div>
-  </div>
-`;
+const POST_ID = "123456";
 
 tippy("#delinkedin", {
-  content: DelinkedinModal,
+  content: DelinkedinModal({ postId: POST_ID }),
   allowHTML: true,
   interactive: true,
   trigger: "click",
+  onShown: () => {
+    let modalInput = document.querySelector(
+      `#modal-input-${POST_ID}`
+    ) as HTMLInputElement;
+    let modalCommentList = document.querySelector(
+      `#modal-comment-list-${POST_ID}`
+    ) as HTMLDivElement;
+
+    function renderCommentList(comments: CommentType[]) {
+      modalCommentList.innerHTML = comments
+        .reverse()
+        .map((c) =>
+          DelinkedinComment({
+            text: c!.content,
+            id: c!.userId,
+          })
+        )
+        .join("\n");
+    }
+
+    (async () => {
+      let result = await doGraphQl<GetAllPostsQuery, GetAllPostsQueryVariables>(
+        getAllPosts,
+        {
+          postId: POST_ID,
+        }
+      );
+
+      if (!result.getPostById) return;
+
+      renderCommentList(result.getPostById.comments! as CommentType[]);
+    })();
+
+    modalInput.onchange = async (e) => {
+      const input = e.target as HTMLInputElement;
+      let comment = input.value.trim();
+
+      if (!comment) {
+        input.value = "";
+        return;
+      }
+
+      input.value = "";
+
+      let result = await doGraphQl<
+        CreateCommentMutation,
+        MutationCreateCommentArgs
+      >(createComment, {
+        content: comment,
+        postId: POST_ID,
+        userId: "pedro",
+      });
+
+      renderCommentList(result.createComment!.post!.comments! as CommentType[]);
+      return;
+    };
+  },
 });

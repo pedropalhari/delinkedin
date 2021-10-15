@@ -67,7 +67,18 @@ export type UpvoteType = {
   userId: Scalars['String'];
 };
 
-export type GetAllPostsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetAllPostsQueryVariables = Exact<{
+  postId: Scalars['String'];
+}>;
 
 
 export type GetAllPostsQuery = { __typename?: 'Query', getPostById?: { __typename?: 'PostType', comments?: Array<{ __typename?: 'CommentType', id: string, content: string, upvoteCount?: number | null | undefined, userId: string } | null | undefined> | null | undefined } | null | undefined };
+
+export type CreateCommentMutationVariables = Exact<{
+  userId: Scalars['String'];
+  postId: Scalars['String'];
+  content: Scalars['String'];
+}>;
+
+
+export type CreateCommentMutation = { __typename?: 'Mutation', createComment?: { __typename?: 'CommentType', post?: { __typename?: 'PostType', comments?: Array<{ __typename?: 'CommentType', id: string, content: string, upvoteCount?: number | null | undefined, userId: string } | null | undefined> | null | undefined } | null | undefined } | null | undefined };
