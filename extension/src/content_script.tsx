@@ -18,6 +18,9 @@ import {
   DelinkedinModalCSS,
 } from "./components/DelinkedinModal";
 import { createComment, doGraphQl, getAllPosts } from "./GraphQL";
+import DelinkedinPopOver, {
+  DelinkedinPopOverCSS,
+} from "./components/DelinkedinPopover";
 
 const RootCSS = css`
   ${TippyCSS}
@@ -43,10 +46,7 @@ const RootCSS = css`
   /* Components */
   ${DelinkedinCommentCSS}
   ${DelinkedinModalCSS}
-
-  .delinkedinButton {
-    cursor: pointer;
-  }
+${DelinkedinPopOverCSS}
 `;
 
 const RootHTML = html`
@@ -55,76 +55,105 @@ const RootHTML = html`
   </style>
 `;
 
-const DelinkedinPopOver = html`
-  <div>
-    <span id="delinkedin" class="delinkedin delinkedinButton">🔥</span>
-  </div>
-`;
+document.head.innerHTML += RootHTML;
 
-document.body.innerHTML = RootHTML + DelinkedinPopOver;
+function injectDelinkedinPopoverOnPost(
+  currentPost: HTMLDivElement,
+  postId: string
+) {
+  currentPost.innerHTML += html`<ul>
+    ${DelinkedinPopOver({ postId })}
+  </ul>`;
 
-const POST_ID = "123456";
+  tippy(`#delinkedin-${postId}`, {
+    content: DelinkedinModal({ postId: postId }),
+    allowHTML: true,
+    interactive: true,
+    trigger: "click",
+    onShown: () => {
+      let modalInput = document.querySelector(
+        `#modal-input-${postId}`
+      ) as HTMLInputElement;
+      let modalCommentList = document.querySelector(
+        `#modal-comment-list-${postId}`
+      ) as HTMLDivElement;
 
-tippy("#delinkedin", {
-  content: DelinkedinModal({ postId: POST_ID }),
-  allowHTML: true,
-  interactive: true,
-  trigger: "click",
-  onShown: () => {
-    let modalInput = document.querySelector(
-      `#modal-input-${POST_ID}`
-    ) as HTMLInputElement;
-    let modalCommentList = document.querySelector(
-      `#modal-comment-list-${POST_ID}`
-    ) as HTMLDivElement;
-
-    function renderCommentList(comments: CommentType[]) {
-      modalCommentList.innerHTML = comments
-        .reverse()
-        .map((c) =>
-          DelinkedinComment({
-            text: c!.content,
-            id: c!.userId,
-          })
-        )
-        .join("\n");
-    }
-
-    (async () => {
-      let result = await doGraphQl<GetAllPostsQuery, GetAllPostsQueryVariables>(
-        getAllPosts,
-        {
-          postId: POST_ID,
-        }
-      );
-
-      if (!result.getPostById) return;
-
-      renderCommentList(result.getPostById.comments! as CommentType[]);
-    })();
-
-    modalInput.onchange = async (e) => {
-      const input = e.target as HTMLInputElement;
-      let comment = input.value.trim();
-
-      if (!comment) {
-        input.value = "";
-        return;
+      function renderCommentList(comments: CommentType[]) {
+        modalCommentList.innerHTML = comments
+          .reverse()
+          .map((c) =>
+            DelinkedinComment({
+              text: c!.content,
+              id: c!.userId,
+            })
+          )
+          .join("\n");
       }
 
-      input.value = "";
+      (async () => {
+        let result = await doGraphQl<
+          GetAllPostsQuery,
+          GetAllPostsQueryVariables
+        >(getAllPosts, {
+          postId,
+        });
 
-      let result = await doGraphQl<
-        CreateCommentMutation,
-        MutationCreateCommentArgs
-      >(createComment, {
-        content: comment,
-        postId: POST_ID,
-        userId: "pedro",
-      });
+        if (!result.getPostById) return;
 
-      renderCommentList(result.createComment!.post!.comments! as CommentType[]);
-      return;
-    };
-  },
-});
+        renderCommentList(result.getPostById.comments! as CommentType[]);
+      })();
+
+      modalInput.onchange = async (e) => {
+        const input = e.target as HTMLInputElement;
+        let comment = input.value.trim();
+
+        if (!comment) {
+          input.value = "";
+          return;
+        }
+
+        input.value = "";
+
+        let result = await doGraphQl<
+          CreateCommentMutation,
+          MutationCreateCommentArgs
+        >(createComment, {
+          content: comment,
+          postId: postId,
+          userId: "pedro",
+        });
+
+        renderCommentList(
+          result.createComment!.post!.comments! as CommentType[]
+        );
+        return;
+      };
+    },
+  });
+}
+
+function getAllPostsAndInjectHTML() {
+  let allPostsVisible = Array.from(
+    document.querySelectorAll(".social-details-social-counts")
+  ) as (HTMLDivElement & { delinked?: boolean })[];
+
+  for (let i = 0; i < allPostsVisible.length; i++) {
+    let currentPost = allPostsVisible[i];
+    if (currentPost.delinked) return;
+    currentPost.delinked = true;
+
+    let possiblePostId =
+      currentPost.parentElement?.parentElement?.parentElement?.dataset.urn;
+
+    if (!possiblePostId) return;
+
+    let postId = possiblePostId.split(":").join("-");
+    injectDelinkedinPopoverOnPost(currentPost, postId);
+  }
+}
+
+setInterval(() => {
+  getAllPostsAndInjectHTML();
+}, 300);
+
+// document.body.innerHTML = RootHTML + DelinkedinPopOver;
